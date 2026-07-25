@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -28,6 +29,7 @@ public sealed record ChatCommandDefinition(ChatCommandRole RequiredRole, string 
 public static class ChatCommandRegistry
 {
     private static IZoneManager _zoneManager = null!;
+    private static IResourceManager _resourceManager = null!;
     private static IDbContextFactory<DatabaseContext> _dbContextFactory = null!;
     private static ILogger _adminLogger = null!;
 
@@ -40,13 +42,16 @@ public static class ChatCommandRegistry
         ["promote"] = new ChatCommandDefinition(ChatCommandRole.Admin, "!admin promote [player]", Promote),
         ["demote"] = new ChatCommandDefinition(ChatCommandRole.Admin, "!admin demote [player]", Demote),
         ["help"] = new ChatCommandDefinition(ChatCommandRole.Mod, "!admin help", Help),
+        ["addnpc"] = new ChatCommandDefinition(ChatCommandRole.Admin, "!admin addnpc [npcDefinitionId]", AddNpc),
+        ["delnpc"] = new ChatCommandDefinition(ChatCommandRole.Admin, "!admin delnpc", DelNpc),
         ["collection"] = new ChatCommandDefinition(ChatCommandRole.Admin,
             "!admin collection <pools|configure [pool] [maxActive] [respawnSeconds]|place [pool]|remove [radius|#id]|list [pool] [page]>", Collection),
     };
 
-    public static void Initialize(IZoneManager zoneManager, IDbContextFactory<DatabaseContext> dbContextFactory, ILogger adminLogger)
+    public static void Initialize(IZoneManager zoneManager, IResourceManager resourceManager, IDbContextFactory<DatabaseContext> dbContextFactory, ILogger adminLogger)
     {
         _zoneManager = zoneManager;
+        _resourceManager = resourceManager;
         _dbContextFactory = dbContextFactory;
         _adminLogger = adminLogger;
     }
@@ -362,6 +367,61 @@ public static class ChatCommandRegistry
             fullHelpString += usage + "\n";
         }
         SendSystemMessage(connection, fullHelpString);
+    }
+
+    private static void AddNpc(GatewayConnection connection, string[] args)
+    {
+        if (args.Length != 1 || !int.TryParse(args[0], out var npcDefinitionId))
+        {
+            SendSystemMessage(connection, $"Usage: {Commands["addnpc"].Usage}");
+            return;
+        }
+
+        var definition = _resourceManager.Npcs.Values.FirstOrDefault(n => n.Id == npcDefinitionId);
+        if (definition is null)
+        {
+            SendSystemMessage(connection, $"No NPC definition with ID {npcDefinitionId} was found.");
+            return;
+        }
+
+        if (!connection.Player.Zone.TryCreateNpc(null, definition, out var npc))
+        {
+            SendSystemMessage(connection, "The NPC could not be added.");
+            return;
+        }
+
+        npc.UpdatePosition(connection.Player.Position, connection.Player.Rotation);
+
+        LogAction(connection, "Add NPC", $"#{npc.Guid} (Definition ID: {npcDefinitionId})");
+        SendSystemMessage(connection, $"Added NPC #{npc.Guid} (Definition ID: {npcDefinitionId}).");
+    }
+
+    private static void DelNpc(GatewayConnection connection, string[] args)
+    {
+        if (args.Length != 0)
+        {
+            SendSystemMessage(connection, $"Usage: {Commands["delnpc"].Usage}");
+            return;
+        }
+
+        var nearestNpc = connection.Player.Zone.Npcs
+            .OrderBy(npc => Vector4.DistanceSquared(npc.Position, connection.Player.Position))
+            .FirstOrDefault();
+
+        if (nearestNpc is null)
+        {
+            SendSystemMessage(connection, "No NPCs are present in this zone.");
+            return;
+        }
+
+        if (!connection.Player.Zone.TryRemoveNpc(nearestNpc.Guid))
+        {
+            SendSystemMessage(connection, "The NPC could not be removed.");
+            return;
+        }
+
+        LogAction(connection, "Remove NPC", $"#{nearestNpc.Guid}");
+        SendSystemMessage(connection, $"Removed NPC #{nearestNpc.Guid}.");
     }
 
     private static void Collection(GatewayConnection connection, string[] args)

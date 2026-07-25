@@ -21,6 +21,7 @@ public static class PacketChatHandler
     private static ILogger _logger = null!;
     private static ILogger _chatLogger = null!;
     private static IZoneManager _zoneManager = null!;
+    private static IResourceManager _resourceManager = null!;
     private static IDbContextFactory<DatabaseContext> _dbContextFactory = null!;
 
     public static void ConfigureServices(IServiceProvider serviceProvider)
@@ -30,11 +31,12 @@ public static class PacketChatHandler
         _chatLogger = loggerFactory.CreateLogger("Chat");
 
         _zoneManager = serviceProvider.GetRequiredService<IZoneManager>();
+        _resourceManager = serviceProvider.GetRequiredService<IResourceManager>();
         _dbContextFactory = serviceProvider.GetRequiredService<IDbContextFactory<DatabaseContext>>();
 
         var adminLogger = loggerFactory.CreateLogger("Admin");
 
-        ChatCommandRegistry.Initialize(_zoneManager, _dbContextFactory, adminLogger);
+        ChatCommandRegistry.Initialize(_zoneManager, _resourceManager, _dbContextFactory, adminLogger);
     }
 
     private static void SendMuteNotice(GatewayConnection connection)
