@@ -14,7 +14,7 @@ using Sanctuary.Packet.Common;
 
 namespace Sanctuary.Game.Zones;
 
-public class StartingZone : BaseZone
+public sealed class StartingZone : BaseZone
 {
     private readonly IZoneManager _zoneManager;
     private readonly IResourceManager _resourceManager;
