@@ -7,7 +7,6 @@ public class GuildInviteAcceptNotificationPacket : BaseGuildPacket, ISerializabl
 {
     public new const byte OpCode = 27;
 
-    public ulong PlayerGuid;
     public NameData Name = new();
 
     public GuildInviteAcceptNotificationPacket() : base(OpCode)
@@ -20,7 +19,6 @@ public class GuildInviteAcceptNotificationPacket : BaseGuildPacket, ISerializabl
 
         Write(writer);
 
-        writer.Write(PlayerGuid);
         Name.Serialize(writer);
 
         return writer.Buffer;

@@ -186,7 +186,6 @@ public static class GuildInviteAcceptPacketHandler
 
         player.SendTunneled(new GuildInviteAcceptNotificationPacket
         {
-            PlayerGuid = connection.Player.Guid,
             Name = connection.Player.Name
         });
 

@@ -38,7 +38,6 @@ public static class GuildInviteDeclinePacketHandler
 
         player.SendTunneled(new GuildInviteDeclineNotificationPacket
         {
-            PlayerGuid = connection.Player.Guid,
             Name = connection.Player.Name
         });
 

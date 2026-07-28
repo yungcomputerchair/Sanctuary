@@ -7,8 +7,9 @@ public class GuildInviteDeclineNotificationPacket : BaseGuildPacket, ISerializab
 {
     public new const byte OpCode = 28;
 
-    public ulong PlayerGuid;
     public NameData Name = new();
+
+    public bool TimedOut;
 
     public GuildInviteDeclineNotificationPacket() : base(OpCode)
     {
@@ -20,8 +21,9 @@ public class GuildInviteDeclineNotificationPacket : BaseGuildPacket, ISerializab
 
         Write(writer);
 
-        writer.Write(PlayerGuid);
         Name.Serialize(writer);
+
+        writer.Write(TimedOut);
 
         return writer.Buffer;
     }
