@@ -80,6 +80,6 @@ public class GuildInviteInteraction : IInteraction
         if (!player.GuildData.Members.TryGetValue(player.Guid, out var guildMember))
             return false;
 
-        return guildMember.Role is 1 or 2;
+        return guildMember.Role == GuildRole.Leader.Id || guildMember.Role == GuildRole.Officer.Id;
     }
 }
