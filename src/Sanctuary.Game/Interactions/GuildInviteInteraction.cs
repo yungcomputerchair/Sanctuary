@@ -58,8 +58,7 @@ public class GuildInviteInteraction : IInteraction
                 FromPlayerGuid = player.Guid,
 
                 InviterPlayerGuid = player.Guid,
-                InviterName = player.Name,
-                InviteeName = otherPlayer.Name,
+                InviterName = player.Name
             },
             GuildName = player.GuildData.Name
         };

@@ -7,20 +7,20 @@ public class GuildInvite : ISerializableType
     public ulong FromPlayerGuid;
 
     /// <summary>Unused</summary>
-    public ulong Unknown;
+    private ulong Unknown = default;
 
     public ulong InviterPlayerGuid;
 
     /// <summary>Unused</summary>
-    public int Unknown2;
+    private int Unknown2 = default;
 
     /// <summary>Unused</summary>
-    public ulong Unknown3;
+    private ulong Unknown3 = default;
 
     public NameData InviterName = new();
 
     /// <summary>Unused</summary>
-    public NameData InviteeName = new();
+    private NameData InviteeName = new();
 
     public void Serialize(PacketWriter writer)
     {
