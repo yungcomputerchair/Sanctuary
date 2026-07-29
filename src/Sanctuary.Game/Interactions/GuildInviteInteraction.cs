@@ -20,7 +20,7 @@ public class GuildInviteInteraction : IInteraction
         if (!CanInvite(player))
             return;
 
-        var maxMembers = player.GuildData!.MaxMembers > 0 ? player.GuildData.MaxMembers : 100;
+        var maxMembers = player.GuildData!.MaxMembers;
         if (player.GuildData.Members.Count >= maxMembers)
         {
             player.SendTunneled(new GuildErrorPacket

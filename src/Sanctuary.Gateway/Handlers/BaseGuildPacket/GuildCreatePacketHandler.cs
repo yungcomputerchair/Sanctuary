@@ -89,8 +89,7 @@ public static class GuildCreatePacketHandler
 
         var dbGuild = new DbGuild
         {
-            Name = guildName,
-            MaxMembers = 100
+            Name = guildName
         };
 
         dbContext.Guilds.Add(dbGuild);

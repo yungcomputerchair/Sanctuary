@@ -83,8 +83,7 @@ public static class GuildInvitePacketHandler
             return true;
         }
 
-        var maxMembers = dbGuild.MaxMembers > 0 ? dbGuild.MaxMembers : 100;
-        if (dbGuild.Members.Count >= maxMembers)
+        if (dbGuild.Members.Count >= dbGuild.MaxMembers)
         {
             connection.SendTunneled(new GuildErrorPacket
             {
