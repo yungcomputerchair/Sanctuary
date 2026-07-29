@@ -59,17 +59,6 @@ public static class GuildInviteAcceptPacketHandler
             return true;
 
         var guildGuid = player.GuildData.Guid;
-        var deletedOrphanedMembers = dbContext.GuildMembers
-            .Where(x => x.GuildId == guildGuid && !dbContext.Characters.Any(c => c.Id == x.Id))
-            .ExecuteDelete();
-
-        if (deletedOrphanedMembers > 0)
-        {
-            _logger.LogWarning(
-                "Deleted orphaned guild members before invite accept. GuildGuid: {guildGuid}, DeletedMembers: {deletedMembers}",
-                guildGuid,
-                deletedOrphanedMembers);
-        }
 
         var dbGuild = dbContext.Guilds
             .Include(x => x.Members)

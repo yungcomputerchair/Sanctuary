@@ -443,18 +443,6 @@ public class GatewayConnection : UdpConnection
 
             if (dbGuild is not null)
             {
-            var orphanedMemberIds = dbGuild.Members
-                .Where(x => x.Character is null)
-                .Select(x => x.Id)
-                .ToList();
-
-            if (orphanedMemberIds.Count > 0)
-            {
-                dbContext.GuildMembers
-                    .Where(x => orphanedMemberIds.Contains(x.Id))
-                    .ExecuteDelete();
-            }
-
             var guildData = new GuildData
             {
                 Guid = dbGuild.Id,
