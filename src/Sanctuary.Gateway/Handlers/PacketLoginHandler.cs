@@ -80,20 +80,6 @@ public static class PacketLoginHandler
 
         var dbCharacter = dbContext.Characters
             .AsNoTracking()
-            .Include(x => x.Items)
-            .Include(x => x.Titles)
-            .Include(x => x.Mounts)
-            .Include(x => x.Friends)
-                .ThenInclude(x => x.FriendCharacter)
-            .Include(x => x.Ignores)
-                .ThenInclude(x => x.IgnoreCharacter)
-            .Include(x => x.Profiles)
-                .ThenInclude(x => x.Items)
-            .Include(x => x.GuildMember)
-                .ThenInclude(x => x!.Guild)
-                    .ThenInclude(x => x.Members)
-                        .ThenInclude(x => x.Character)
-            .AsSplitQuery()
             .SingleOrDefault(x => x.Id == GuidHelper.GetPlayerId(packet.Guid) && x.Ticket == ticket);
 
         if (dbCharacter is null)
