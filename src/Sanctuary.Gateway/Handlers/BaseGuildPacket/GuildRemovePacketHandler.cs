@@ -91,8 +91,11 @@ public static class GuildRemovePacketHandler
             Type = 2
         };
 
-        foreach (var guildPlayer in _zoneManager.GetPlayers())
+        foreach (var member in connection.Player.GuildData.Members.Values.ToList())
         {
+            if (!_zoneManager.TryGetPlayer(member.Guid, out var guildPlayer))
+                continue;
+
             if (guildPlayer.GuildData is null || guildPlayer.GuildData.Guid != packet.GuildGuid)
                 continue;
 

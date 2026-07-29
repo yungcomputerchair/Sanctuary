@@ -127,9 +127,9 @@ public static class PacketChatHandler
                         packet.Message
                     );
 
-                    foreach (var guildPlayer in _zoneManager.GetPlayers())
+                    foreach (var member in connection.Player.GuildData.Members.Values)
                     {
-                        if (guildPlayer.GuildData is null || guildPlayer.GuildData.Guid != packet.GuildGuid)
+                        if (!_zoneManager.TryGetPlayer(member.Guid, out var guildPlayer))
                             continue;
 
                         if (guildPlayer.Guid != connection.Player.Guid && guildPlayer.Ignores.Any(x => x.Guid == connection.Player.Guid))

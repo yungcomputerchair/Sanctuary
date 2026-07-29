@@ -131,8 +131,11 @@ public static class GuildPromotePacketHandler
             ProfileRank = profileRank
         };
 
-        foreach (var guildPlayer in _zoneManager.GetPlayers())
+        foreach (var member in connection.Player.GuildData.Members.Values)
         {
+            if (!_zoneManager.TryGetPlayer(member.Guid, out var guildPlayer))
+                continue;
+
             if (guildPlayer.GuildData is null || guildPlayer.GuildData.Guid != packet.GuildGuid)
                 continue;
 

@@ -115,8 +115,11 @@ public static class GuildRenameGuildPacketHandler
         };
 
         var notifiedPlayers = 0;
-        foreach (var player in _zoneManager.GetPlayers())
+        foreach (var member in connection.Player.GuildData.Members.Values)
         {
+            if (!_zoneManager.TryGetPlayer(member.Guid, out var player))
+                continue;
+
             if (player.GuildData is null || player.GuildData.Guid != guildGuid)
                 continue;
 

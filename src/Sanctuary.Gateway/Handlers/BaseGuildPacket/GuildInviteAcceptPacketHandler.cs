@@ -174,8 +174,11 @@ public static class GuildInviteAcceptPacketHandler
             ProfileRank = connection.Player.ActiveProfile.Rank
         };
 
-        foreach (var onlinePlayer in _zoneManager.GetPlayers())
+        foreach (var member in guildData.Members.Values.ToList())
         {
+            if (!_zoneManager.TryGetPlayer(member.Guid, out var onlinePlayer))
+                continue;
+
             if (onlinePlayer.GuildData is null || onlinePlayer.GuildData.Guid != guildData.Guid)
                 continue;
 
