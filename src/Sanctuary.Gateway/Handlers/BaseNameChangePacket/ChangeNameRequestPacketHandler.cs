@@ -40,16 +40,23 @@ public static class ChangeNameRequestPacketHandler
 
         _logger.LogTrace("Received {name} packet. ( {packet} )", nameof(ChangeNameRequestPacket), packet);
 
+        var nameChangeResponsePacket = new NameChangeResponsePacket
+        {
+            Type = packet.Type,
+            Guid = packet.Guid,
+            Name = packet.Name
+        };
+
         if (connection.Player.Guid != packet.Guid)
         {
             _logger.LogError("Invalid player guid. {guid}", packet.Guid);
+
+            nameChangeResponsePacket.Result = ChangeNameResponse.Error;
+
+            connection.SendTunneled(nameChangeResponsePacket);
+
+            return true;
         }
-
-        var nameChangeResponsePacket = new NameChangeResponsePacket();
-
-        nameChangeResponsePacket.Type = packet.Type;
-        nameChangeResponsePacket.Guid = packet.Guid;
-        nameChangeResponsePacket.Name = packet.Name;
 
         nameChangeResponsePacket.Result = packet.Type switch
         {
