@@ -13,6 +13,10 @@ public interface IResourceManager
     ModelDefinitionCollection Models { get; }
 
     ClientItemDefinitionCollection ClientItemDefinitions { get; }
+    CollectionDefinitionCollection Collections { get; }
+    CollectionNodePoolDefinitionCollection CollectionNodePools { get; }
+    CollectionNodeTypeDefinitionCollection CollectionNodeTypes { get; }
+    CollectionNodeSpawnDefinitionCollection CollectionNodeSpawns { get; }
 
     CoinStoreItemCollection CoinStoreItems { get; }
 
@@ -31,6 +35,8 @@ public interface IResourceManager
     ProfileDefinitionCollection Profiles { get; }
     QuickChatDefinitionCollection QuickChats { get; }
     PointOfInterestDefinitionCollection PointOfInterests { get; }
+    NpcDefinitionCollection Npcs { get; }
+    NameFilterCollection NameFilter { get; }
 
     bool Load();
 }

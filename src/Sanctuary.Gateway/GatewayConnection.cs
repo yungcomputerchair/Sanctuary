@@ -235,18 +235,12 @@ public class GatewayConnection : UdpConnection
         Player.Coins = dbCharacter.Coins;
 
         Player.Birthday = dbCharacter.Created;
+        Player.PlayTime = dbCharacter.PlayTime;
 
         Player.MembershipStatus = dbCharacter.MembershipStatus;
         Player.ShowMemberNagScreen = _options.ShowMemberNagScreen;
 
-        using var dbContext = _dbContextFactory.CreateDbContext();
-
-        var dbProfiles = dbContext.Profiles
-            .AsNoTracking()
-            .Include(x => x.Items)
-            .Where(x => x.CharacterId == dbCharacter.Id);
-
-        foreach (var dbProfile in dbProfiles)
+        foreach (var dbProfile in dbCharacter.Profiles)
         {
             if (!_resourceManager.Profiles.TryGetValue(dbProfile.Id, out var profileData))
                 continue;
@@ -303,13 +297,25 @@ public class GatewayConnection : UdpConnection
             }
         }
 
+        if (Player.Profiles.Count == 0)
+        {
+            _logger.LogError("Character {id} has no valid profiles.", dbCharacter.Id);
+            return false;
+        }
+
+        if (!Player.Profiles.Any(x => x.Id == dbCharacter.ActiveProfileId))
+        {
+            _logger.LogWarning(
+                "Character {id} has invalid ActiveProfileId {profileId}; using first profile.",
+                dbCharacter.Id,
+                dbCharacter.ActiveProfileId);
+
+            dbCharacter.ActiveProfileId = Player.Profiles[0].Id;
+        }
+
         Player.ActiveProfileId = dbCharacter.ActiveProfileId;
 
-        var dbItems = dbContext.Items
-            .AsNoTracking()
-            .Where(x => x.CharacterId == dbCharacter.Id);
-
-        foreach (var dbItem in dbItems)
+        foreach (var dbItem in dbCharacter.Items)
         {
             Player.Items.Add(new ClientItem
             {
@@ -322,11 +328,7 @@ public class GatewayConnection : UdpConnection
 
         Player.Gender = dbCharacter.Gender;
 
-        var dbMounts = dbContext.Mounts
-            .AsNoTracking()
-            .Where(x => x.CharacterId == dbCharacter.Id);
-
-        foreach (var dbMount in dbMounts)
+        foreach (var dbMount in dbCharacter.Mounts)
         {
             if (!_resourceManager.Mounts.TryGetValue(dbMount.Definition, out var mountDefinition))
                 continue;
@@ -360,11 +362,7 @@ public class GatewayConnection : UdpConnection
         Player.ActionBars.Add(clientActionBar.Id, clientActionBar);
         // End - Store on DB
 
-        var dbTitles = dbContext.Titles
-            .AsNoTracking()
-            .Where(x => x.CharacterId == dbCharacter.Id);
-
-        foreach (var dbTitle in dbTitles)
+        foreach (var dbTitle in dbCharacter.Titles)
         {
             if (!_resourceManager.PlayerTitles.TryGetValue(dbTitle.Id, out var playerTitle))
                 continue;
@@ -382,12 +380,11 @@ public class GatewayConnection : UdpConnection
         Player.ChatBubbleBackgroundColor = dbCharacter.ChatBubbleBackgroundColor;
         Player.ChatBubbleSize = dbCharacter.ChatBubbleSize;
 
-        var dbFriends = dbContext.Friends
-            .AsNoTracking()
-            .Include(x => x.FriendCharacter)
-            .Where(x => x.CharacterId == dbCharacter.Id);
+        Player.IsAdmin = dbCharacter.User.IsAdmin;
+        Player.IsMod = dbCharacter.User.IsMod;
+        Player.MutedUntil = dbCharacter.User.MutedUntil;
 
-        foreach (var dbFriend in dbFriends)
+        foreach (var dbFriend in dbCharacter.Friends)
         {
             var friendData = new FriendData
             {
@@ -415,12 +412,7 @@ public class GatewayConnection : UdpConnection
             Player.Friends.Add(friendData);
         }
 
-        var dbIgnores = dbContext.Ignores
-            .AsNoTracking()
-            .Include(x => x.IgnoreCharacter)
-            .Where(x => x.CharacterId == dbCharacter.Id);
-
-        foreach (var dbIgnore in dbIgnores)
+        foreach (var dbIgnore in dbCharacter.Ignores)
         {
             var ignoreData = new IgnoreData
             {
@@ -433,16 +425,8 @@ public class GatewayConnection : UdpConnection
 
         Player.StationCash = dbCharacter.StationCash;
 
-        if (dbCharacter.GuildMemberId > 0)
+        if (dbCharacter.GuildMember?.Guild is { } dbGuild)
         {
-            var dbGuild = dbContext.Guilds
-                .AsNoTracking()
-                .Include(x => x.Members)
-                    .ThenInclude(x => x.Character)
-                .SingleOrDefault(x => x.Members.Any(x => x.Id == dbCharacter.Id));
-
-            if (dbGuild is not null)
-            {
             var guildData = new GuildData
             {
                 Guid = dbGuild.Id,
@@ -468,7 +452,7 @@ public class GatewayConnection : UdpConnection
                     {
                         FirstName = dbGuildMember.Character.FirstName,
                         LastName = dbGuildMember.Character.LastName ?? string.Empty
-                        }
+                    }
                 };
 
                 if (_zoneManager.TryGetPlayer(memberGuid, out var memberPlayer))
@@ -481,11 +465,10 @@ public class GatewayConnection : UdpConnection
                     guildMember.ProfileRank = memberPlayer.ActiveProfile.Rank;
                 }
 
-                    guildData.Members.Add(memberGuid, guildMember);
+                guildData.Members.Add(memberGuid, guildMember);
             }
 
-                player.GuildData = guildData;
-        }
+            player.GuildData = guildData;
         }
 
         return true;
@@ -529,6 +512,9 @@ public class GatewayConnection : UdpConnection
         dbCharacter.ActiveProfileId = Player.ActiveProfileId;
 
         dbCharacter.ActiveTitleId = Player.ActiveTitle;
+
+        if (dbCharacter.LastLogin.HasValue)
+            dbCharacter.PlayTime += (int)(DateTimeOffset.UtcNow - dbCharacter.LastLogin.Value).TotalMinutes;
 
         // End ClientPcData
 
@@ -599,6 +585,14 @@ public class GatewayConnection : UdpConnection
 
     public void SendSelfToClient()
     {
+        var ownedItemDefinitionIds = Player.Items
+            .Select(item => item.Definition)
+            .ToHashSet();
+
+        // TODO: Include persisted non-inventory progress here when direct collections such as
+        // adventure coins have a database representation.
+        Player.Collections = _resourceManager.Collections.CreateClientCollections(Player.Guid, ownedItemDefinitionIds);
+
         var packetSendSelfToClient = new PacketSendSelfToClient();
 
         packetSendSelfToClient.Payload = Player.Serialize();

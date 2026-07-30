@@ -370,7 +370,15 @@
     "ImageSetId": 8556,
     "ModelId": 4590,
     "Stats": {
-      "MaxMovementSpeed": 12.5
+      "MaxMovementSpeed": 12.5,
+      "GlideDefaultForwardSpeed": 12,
+      "GlideMinForwardSpeed": 6,
+      "GlideMaxForwardSpeed": 22,
+      "GlideFallTime": 0.75,
+      "GlideFallSpeed": 3,
+      "GlideEnabled": 1,
+      "GlideAccel": 4,
+      "JumpHeight": 5
     }
   },
   {
@@ -465,6 +473,30 @@
     "ImageSetId": 6460,
     "TintAlias": "dyetint",
     "ModelId": 503,
+    "Stats": {
+      "MaxMovementSpeed": 12.5
+    }
+  },
+  {
+    "Comment": "Lawn Chair",
+    "Id": 13460,
+    "NameId": 442689,
+    "ImageSetId": 8456,
+    "TextureAlias": "lawnchair-treelogo",
+    "TintAlias": "dyetint",
+    "ModelId": 4439,
+    "Stats": {
+      "MaxMovementSpeed": 0
+    }
+  },
+  {
+    "Comment": "Chrome Drake",
+    "Id": 13583,
+    "NameId": 442331,
+    "ImageSetId": 8406,
+    "TextureAlias": "drake-chrome-mount",
+    "IsUpgradable": true,
+    "ModelId": 4217,
     "Stats": {
       "MaxMovementSpeed": 12.5
     }

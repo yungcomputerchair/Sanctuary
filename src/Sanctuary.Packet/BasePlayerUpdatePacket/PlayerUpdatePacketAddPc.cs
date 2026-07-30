@@ -54,9 +54,9 @@ public class PlayerUpdatePacketAddPc : BasePlayerUpdatePacket, ISerializablePack
     public PlayerTitleData Title = new();
 
     public ulong MountGuid;
+
     public int MountSeat;
     public int MountQueuePosition;
-
     public float NameVerticalOffset;
 
     public int WieldType;

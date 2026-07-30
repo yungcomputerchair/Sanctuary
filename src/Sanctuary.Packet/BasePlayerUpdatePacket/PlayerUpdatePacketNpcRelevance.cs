@@ -12,7 +12,7 @@ public class PlayerUpdatePacketNpcRelevance : BasePlayerUpdatePacket, ISerializa
     {
         public ulong Guid;
 
-        public bool Unknown;
+        public bool HasCursor;
 
         /// <summary>
         /// Id from Cursors.txt
@@ -25,8 +25,10 @@ public class PlayerUpdatePacketNpcRelevance : BasePlayerUpdatePacket, ISerializa
         {
             writer.Write(Guid);
 
-            writer.Write(Unknown);
+            writer.Write(HasCursor);
+
             writer.Write(CursorId);
+
             writer.Write(Unknown2);
         }
     }
