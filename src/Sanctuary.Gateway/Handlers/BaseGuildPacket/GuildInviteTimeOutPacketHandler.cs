@@ -33,6 +33,9 @@ public static class GuildInviteTimeOutPacketHandler
 
         _logger.LogTrace("Received {name} packet. ( {packet} )", nameof(GuildInviteTimeOutPacket), packet);
 
+        if (!connection.Player.IncomingGuildInvites.TryRemove(packet.PlayerGuid))
+            return true;
+
         if (!_zoneManager.TryGetPlayer(packet.PlayerGuid, out var player))
             return true;
 

@@ -49,6 +49,7 @@ public sealed class Player : ClientPcData, IEntity
     public List<IgnoreData> Ignores { get; set; } = [];
 
     public ConcurrentSet<ulong> IncomingFriendRequests { get; } = [];
+    public ConcurrentSet<ulong> IncomingGuildInvites { get; } = [];
 
     public ConcurrentDictionary<ChatChannel, bool> ChatChannelStatus { get; set; } = [];
 

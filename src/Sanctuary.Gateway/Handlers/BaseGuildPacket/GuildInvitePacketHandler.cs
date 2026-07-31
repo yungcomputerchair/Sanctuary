@@ -114,6 +114,9 @@ public static class GuildInvitePacketHandler
             return true;
         }
 
+        if (!player.IncomingGuildInvites.TryAdd(connection.Player.Guid))
+            return true;
+
         var guildInviteNotificationPacket = new GuildInviteNotificationPacket
         {
             GuildInvite =
