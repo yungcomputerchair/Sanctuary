@@ -107,8 +107,31 @@ public static class GuildCreatePacketHandler
 
         dbCharacter.GuildMemberId = dbGuildMember.Id;
 
-        if (dbContext.SaveChanges() <= 0)
+        var created = true;
+
+        try
+        {
+            if (dbContext.SaveChanges() <= 0)
+            {
+                _logger.LogWarning("Failed to create guild \"{name}\".", guildName);
+                created = false;
+            }
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogWarning(ex, "Failed to create guild \"{name}\".", guildName);
+            created = false;
+        }
+
+        if (!created)
+        {
+            connection.SendTunneled(new GuildErrorPacket
+            {
+                MessageName = "GuildNameAlreadyExists"
+            });
+
             return true;
+        }
 
         var guildCreateGuildPacket = new GuildCreateGuildPacket
         {

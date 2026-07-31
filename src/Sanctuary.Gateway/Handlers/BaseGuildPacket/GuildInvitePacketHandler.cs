@@ -171,7 +171,7 @@ public static class GuildInvitePacketHandler
             return null;
 
         var normalizedPlayerName = playerName.ToLower();
-        return dbContext.Characters.SingleOrDefault(x => x.FullName != null && x.FullName.ToLower() == normalizedPlayerName);
+        return dbContext.Characters.FirstOrDefault(x => x.FullName != null && x.FullName.ToLower() == normalizedPlayerName);
     }
 
     private static string NormalizeName(string? name)
