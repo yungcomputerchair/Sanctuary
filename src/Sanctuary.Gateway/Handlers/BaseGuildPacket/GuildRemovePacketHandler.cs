@@ -69,20 +69,28 @@ public static class GuildRemovePacketHandler
             return true;
         }
 
-        using var transaction = dbContext.Database.BeginTransaction();
+        var strategy = dbContext.Database.CreateExecutionStrategy();
+        var committed = strategy.Execute(() =>
+        {
+            using var transaction = dbContext.Database.BeginTransaction();
 
-        dbContext.Characters
-            .Where(x => x.Id == targetId)
-            .ExecuteUpdate(x => x.SetProperty(x => x.GuildMemberId, (ulong?)null));
+            dbContext.Characters
+                .Where(x => x.Id == targetId)
+                .ExecuteUpdate(x => x.SetProperty(x => x.GuildMemberId, (ulong?)null));
 
-        var deleted = dbContext.GuildMembers
-            .Where(x => x.GuildId == packet.GuildGuid && x.Id == targetId)
-            .ExecuteDelete();
+            var deleted = dbContext.GuildMembers
+                .Where(x => x.GuildId == packet.GuildGuid && x.Id == targetId)
+                .ExecuteDelete();
 
-        if (deleted <= 0)
+            if (deleted <= 0)
+                return false;
+
+            transaction.Commit();
             return true;
+        });
 
-        transaction.Commit();
+        if (!committed)
+            return true;
 
         var guildMemberStatusUpdatePacket = new GuildMemberStatusUpdatePacket
         {

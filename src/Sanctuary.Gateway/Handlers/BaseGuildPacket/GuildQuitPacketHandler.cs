@@ -47,96 +47,109 @@ public static class GuildQuitPacketHandler
             return true;
 
         using var dbContext = _dbContextFactory.CreateDbContext();
-        using var transaction = dbContext.Database.BeginTransaction();
 
         var characterId = GuidHelper.GetPlayerId(connection.Player.Guid);
-        var quitRole = dbContext.GuildMembers
-            .AsNoTracking()
-            .Where(x => x.GuildId == packet.Guid && x.Id == characterId)
-            .Select(x => (int?)x.Role)
-            .SingleOrDefault();
 
-        if (quitRole is null)
-            return true;
-
-        var result = dbContext.Characters
-            .Where(x => x.Id == characterId)
-            .ExecuteUpdate(x => x.SetProperty(x => x.GuildMemberId, (ulong?)null));
-
-        if (result <= 0)
-            return true;
-
-        var dbGuildMemberToRemove = dbContext.GuildMembers
-            .Where(x => x.GuildId == packet.Guid && x.Id == characterId);
-
-        if (dbGuildMemberToRemove.ExecuteDelete() <= 0)
-            return true;
-
-        var hasMembers = dbContext.GuildMembers.Any(m => m.GuildId == packet.Guid);
         GuildMemberStatusUpdatePacket? promotedLeaderStatusUpdatePacket = null;
 
-        if (!hasMembers)
+        var strategy = dbContext.Database.CreateExecutionStrategy();
+        var committed = strategy.Execute(() =>
         {
-            var dbGuildToDelete = dbContext.Guilds
-                .Where(g => g.Id == packet.Guid);
+            promotedLeaderStatusUpdatePacket = null;
 
-            if (dbGuildToDelete.ExecuteDelete() <= 0)
-                return true;
-        }
-        else if (quitRole == GuildRole.Leader.Id
-                 && !dbContext.GuildMembers.Any(m => m.GuildId == packet.Guid && m.Role == GuildRole.Leader.Id))
-        {
-            var newLeader = dbContext.GuildMembers
-                .Include(x => x.Character)
-                .Where(x => x.GuildId == packet.Guid)
-                .AsEnumerable()
-                .OrderBy(x => x.Role)
-                .ThenBy(x => x.Id)
-                .FirstOrDefault();
+            using var transaction = dbContext.Database.BeginTransaction();
 
-            if (newLeader is not null)
+            var quitRole = dbContext.GuildMembers
+                .AsNoTracking()
+                .Where(x => x.GuildId == packet.Guid && x.Id == characterId)
+                .Select(x => (int?)x.Role)
+                .SingleOrDefault();
+
+            if (quitRole is null)
+                return false;
+
+            var result = dbContext.Characters
+                .Where(x => x.Id == characterId)
+                .ExecuteUpdate(x => x.SetProperty(x => x.GuildMemberId, (ulong?)null));
+
+            if (result <= 0)
+                return false;
+
+            var dbGuildMemberToRemove = dbContext.GuildMembers
+                .Where(x => x.GuildId == packet.Guid && x.Id == characterId);
+
+            if (dbGuildMemberToRemove.ExecuteDelete() <= 0)
+                return false;
+
+            var hasMembers = dbContext.GuildMembers.Any(m => m.GuildId == packet.Guid);
+
+            if (!hasMembers)
             {
-                newLeader.Role = GuildRole.Leader.Id;
+                var dbGuildToDelete = dbContext.Guilds
+                    .Where(g => g.Id == packet.Guid);
 
-                if (dbContext.SaveChanges() <= 0)
-                    return true;
-
-                var newLeaderGuid = GuidHelper.GetPlayerGuid(newLeader.Id);
-                var memberName = new NameData
-                {
-                    FirstName = newLeader.Character.FirstName,
-                    LastName = newLeader.Character.LastName ?? string.Empty
-                };
-
-                var online = _zoneManager.TryGetPlayer(newLeaderGuid, out var newLeaderPlayer);
-                var worldId = 0;
-                var profileId = 0;
-                var profileRank = 0;
-
-                if (online)
-                {
-                    memberName = newLeaderPlayer!.Name;
-                    worldId = newLeaderPlayer.Zone.Id;
-                    profileId = newLeaderPlayer.ActiveProfileId;
-                    profileRank = newLeaderPlayer.ActiveProfile.Rank;
-                }
-
-                promotedLeaderStatusUpdatePacket = new GuildMemberStatusUpdatePacket
-                {
-                    GuildGuid = packet.Guid,
-                    MemberGuid = newLeaderGuid,
-                    Name = memberName,
-                    Role = GuildRole.Leader.Id,
-                    Online = online,
-                    Type = 4,
-                    WorldId = worldId,
-                    ProfileId = profileId,
-                    ProfileRank = profileRank
-                };
+                if (dbGuildToDelete.ExecuteDelete() <= 0)
+                    return false;
             }
-        }
+            else if (quitRole == GuildRole.Leader.Id
+                     && !dbContext.GuildMembers.Any(m => m.GuildId == packet.Guid && m.Role == GuildRole.Leader.Id))
+            {
+                var newLeader = dbContext.GuildMembers
+                    .Include(x => x.Character)
+                    .Where(x => x.GuildId == packet.Guid)
+                    .AsEnumerable()
+                    .OrderBy(x => x.Role)
+                    .ThenBy(x => x.Id)
+                    .FirstOrDefault();
 
-        transaction.Commit();
+                if (newLeader is not null)
+                {
+                    newLeader.Role = GuildRole.Leader.Id;
+
+                    if (dbContext.SaveChanges() <= 0)
+                        return false;
+
+                    var newLeaderGuid = GuidHelper.GetPlayerGuid(newLeader.Id);
+                    var memberName = new NameData
+                    {
+                        FirstName = newLeader.Character.FirstName,
+                        LastName = newLeader.Character.LastName ?? string.Empty
+                    };
+
+                    var online = _zoneManager.TryGetPlayer(newLeaderGuid, out var newLeaderPlayer);
+                    var worldId = 0;
+                    var profileId = 0;
+                    var profileRank = 0;
+
+                    if (online)
+                    {
+                        memberName = newLeaderPlayer!.Name;
+                        worldId = newLeaderPlayer.Zone.Id;
+                        profileId = newLeaderPlayer.ActiveProfileId;
+                        profileRank = newLeaderPlayer.ActiveProfile.Rank;
+                    }
+
+                    promotedLeaderStatusUpdatePacket = new GuildMemberStatusUpdatePacket
+                    {
+                        GuildGuid = packet.Guid,
+                        MemberGuid = newLeaderGuid,
+                        Name = memberName,
+                        Role = GuildRole.Leader.Id,
+                        Online = online,
+                        Type = 4,
+                        WorldId = worldId,
+                        ProfileId = profileId,
+                        ProfileRank = profileRank
+                    };
+                }
+            }
+
+            transaction.Commit();
+            return true;
+        });
+
+        if (!committed)
+            return true;
 
         var guildPlayerStatusUpdatePacket = new GuildPlayerStatusUpdatePacket
         {
