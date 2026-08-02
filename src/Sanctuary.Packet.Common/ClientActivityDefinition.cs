@@ -8,9 +8,12 @@ public class ClientActivityDefinition : ISerializableType
 {
     public int Id { get; set; }
 
+    // 1 - single player minigame
+    // 2 - multiplayer minigame/dungeon
+    // 3 - community event/snow day
     public int AppSystemId { get; set; }
 
-    public int Unknown3 { get; set; }
+    public int Unknown { get; set; }
 
     public int Category { get; set; }
 
@@ -109,7 +112,7 @@ public class ClientActivityDefinition : ISerializableType
 
         writer.Write(Difficulty);
 
-        writer.Write(Unknown3);
+        writer.Write(Unknown);
         writer.Write(MysteryChestId);
 
         writer.Write(MysteryChestIcon);
